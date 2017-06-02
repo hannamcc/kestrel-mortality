@@ -1,0 +1,101 @@
+REGION,location
+1,Africa
+2,Alabama
+3,Alaska
+4,Alberta
+99,Antarctica
+5,Argentina
+6,Arizona
+7,Arkansas
+8,Asia
+94,At Sea (oceans)
+9,Bahama Islands
+12,Belize
+97,Bermuda
+13,Bolivia
+10,Brazil
+11,British Columbia
+14,California
+CA,Canada (Unknown State)
+15,Chile
+16,Colombia
+17,Colorado
+18,Connecticut
+19,Costa Rica
+20,Cuba
+21,Delaware
+22,District of Columbia
+31,Dominican Republic and Haiti
+23,Ecuador
+78,El Salvador
+24,Europe
+25,Florida
+30,"French Guiana, Guyana and Surinam"
+27,Georgia
+28,Greenland
+29,Guatemala
+32,Honduras
+33,Idaho
+34,Illinois
+35,Indiana
+36,Iowa
+37,Jamaica and Cayman Islands
+38,Kansas
+39,Kentucky
+41,Lesser Antilles
+42,Louisiana
+44,Maine
+45,Manitoba
+46,Maryland
+47,Massachusetts
+48,Mexico
+49,Michigan
+50,Minnesota
+51,Mississippi
+52,Missouri
+53,Montana
+54,Nebraska
+55,Nevada
+56,New Brunswick
+58,New Hampshire
+59,New Jersey
+60,New Mexico
+61,New York
+57,Newfoundland and Labrador and St. Pierre et Miquelon
+62,Nicaragua
+63,North Carolina
+64,North Dakota
+43,Northwest Territories
+65,Nova Scotia
+40,Nunavut
+96,"Oceania (including Hawaii), Australia, New Zealand and Phillipines"
+66,Ohio
+67,Oklahoma
+68,Ontario
+69,Oregon
+70,Panama
+71,Paraguay
+72,Pennsylvania
+73,Peru
+75,Prince Edward Island
+74,Puerto Rico
+76,Quebec
+77,Rhode Island
+98,Russia
+79,Saskatchewan
+80,South Carolina
+81,South Dakota
+82,Tennessee
+83,Texas
+0,Unknown
+84,Uruguay
+US,US (Unknown State)
+85,Utah
+86,Venezuela
+87,Vermont
+88,Virginia
+89,Washington
+90,West Virginia
+91,Wisconsin
+92,Wyoming
+93,Yukon Territory
