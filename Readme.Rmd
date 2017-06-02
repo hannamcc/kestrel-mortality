@@ -1,0 +1,202 @@
+---
+title: "Readme"
+author: "Hanna McCaslin"
+date: "6/2/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This repository contains the code and data for converting individual-by-individual BBL records to mark frequency data. 
+
+The data from the BBL in May are attached in the 'data' folder in the repository (hopefully). There's also a location file to match up the individual records to a place, just in case. 
+```{r, include = FALSE}
+source("R/bbl-functions.R")
+
+### Read in encounter data and banding data from BBL (downloaded from ftp May 2017)
+encounters <- read_bbl("data/AMKE_encounterdb_201705111648.csv") %>%
+     select(BAND_NUM, B_SEX_CODE, B_AGE_CODE, B_FLYWAY_CODE, BANDING_YEAR, E_HOW_OBTAINED_CODE, E_PRESENT_CONDITION_CODE, ENCOUNTER_YEAR, B_REGION, B_LON_DECIMAL_DEGREES)
+
+all_bands <- read_bbl("data/AMKE_bandingdb_201705111647.csv", with_encs = FALSE) %>%
+     select(BAND_NUM, B_SEX_CODE = SEX_CODE, B_AGE_CODE = AGE_CODE, B_FLYWAY_CODE = FLYWAY_CODE, BANDING_YEAR, B_REGION = REGION, B_LON_DECIMAL_DEGREES = LON_DECIMAL_DEGREES)
+```
+
+## Filtering encounter records
+Originally, I just filtered down to only include present condition codes 03, 04, 05 which are the "dead" codes:
+```{r}
+recoveries <- filter(encounters, E_PRESENT_CONDITION_CODE == 3 | E_PRESENT_CONDITION_CODE == 4 | E_PRESENT_CONDITION_CODE == 5)
+# results in encounters n = 3484
+```
+
+I then went back and refiltered using the present condition/how obtained code combinations Julie used, which results in the inclusion of 73 additional records:
+```{r}
+recoveries2 <- filter(encounters, E_PRESENT_CONDITION_CODE != 06 & E_PRESENT_CONDITION_CODE != 07 & E_PRESENT_CONDITION_CODE != 08) #removes 1508
+recoveries2 <- filter(recoveries2, E_PRESENT_CONDITION_CODE == 03 | E_PRESENT_CONDITION_CODE == 04 | E_PRESENT_CONDITION_CODE == 05 | (E_HOW_OBTAINED_CODE != 03 & E_HOW_OBTAINED_CODE != 21 & E_HOW_OBTAINED_CODE != 28 & E_HOW_OBTAINED_CODE != 29 & E_HOW_OBTAINED_CODE != 33 & E_HOW_OBTAINED_CODE != 36 & E_HOW_OBTAINED_CODE != 37 & E_HOW_OBTAINED_CODE != 46 & E_HOW_OBTAINED_CODE != 47 & E_HOW_OBTAINED_CODE != 53 & E_HOW_OBTAINED_CODE != 56 & E_HOW_OBTAINED_CODE != 66 & E_HOW_OBTAINED_CODE != 97 & E_HOW_OBTAINED_CODE != 98 ))
+
+filter(recoveries2, BAND_NUM == 126346015) %>% # One duplicate - both encounters report the bird dead, but in different columns
+     select(ENCOUNTER_YEAR, E_HOW_OBTAINED_CODE, E_PRESENT_CONDITION_CODE)
+recoveries2 <- filter(recoveries2, BAND_NUM != 126346015 | E_PRESENT_CONDITION_CODE ==05) #remove one of the duplicates
+# results in n = 3557
+```
+
+One thing that's important to note here is that I'm just removing theses from the encounter set, which next I will join with the banding records by band number, so the individuals taken out aren't gone from the dataset; they are just treated as surviving birds. The problem with this is that some of the records that got removed/pushed into the surviving birds probably shouldn't be considered alive or dead at all and should be removed altogether from the data. Does that make sense?  
+What do you think - which filtering do you want to use, and should I go back through and remove some of the more ambiguous individuals from the data altogether?  
+
+## Joining encounters with banding records and filtering out records
+After joining the two datasets together, any filtering will actually remove that record/band from the data altogether. (This distinction is something I missed initially, and could explain some of the difference in number of records)
+
+```{r, include = FALSE}
+bands_and_recoveries <- full_join(all_bands, recoveries, by = c("BAND_NUM"))
+
+unfiltered_data <- select(bands_and_recoveries, BAND_NUM, SEX = B_SEX_CODE.x, AGE = B_AGE_CODE.x, FLYWAY = B_FLYWAY_CODE.x, BANDING_YEAR = BANDING_YEAR.x, B_REGION = B_REGION.x, B_LON = B_LON_DECIMAL_DEGREES.x, ENCOUNTER_YEAR, E_HOW_OBTAINED = E_HOW_OBTAINED_CODE, E_CONDITION = E_PRESENT_CONDITION_CODE)
+```
+
+This is the filtering that I ended up doing: removing unknown age and sex, removing Caribbean and South American records, removing Mexico, selecting the correct years, and removing the locals that died in the nest. 
+```{r}
+filtered_data <- unfiltered_data %>%
+     filter(SEX != 0) %>%  # remove unknown sex
+     filter(AGE != 0) %>%  # remove unknown age
+     filter(FLYWAY != 8 & FLYWAY != 9) %>% # remove Caribbean & South American records 
+     filter(FLYWAY!= 7) %>% # optional: remove mexico
+     filter(BANDING_YEAR >= 1967 & BANDING_YEAR <= 2015) %>% 
+     filter(is.na(ENCOUNTER_YEAR) | (ENCOUNTER_YEAR >= 1967 & ENCOUNTER_YEAR <= 2015)) %>% # filter to dates of study
+     filter(is.na(E_HOW_OBTAINED) | !(AGE == 4 & E_HOW_OBTAINED == 30)) #remove locals died in nest, removes n = 19
+
+     #n = 267118 / 266990 remaining (Mex, no Mex)
+```
+
+And, I did the same with the encounters selected by Julie's specific criteria:
+```{r, include = FALSE}
+bands_and_recoveries2 <- full_join(all_bands, recoveries2, by = c("BAND_NUM")) 
+
+unfiltered_data2 <- select(bands_and_recoveries2, BAND_NUM, SEX = B_SEX_CODE.x, AGE = B_AGE_CODE.x, FLYWAY = B_FLYWAY_CODE.x, BANDING_YEAR = BANDING_YEAR.x, B_REGION = B_REGION.x, B_LON = B_LON_DECIMAL_DEGREES.x, ENCOUNTER_YEAR, E_HOW_OBTAINED = E_HOW_OBTAINED_CODE, E_CONDITION = E_PRESENT_CONDITION_CODE)
+```
+
+```{r}
+filtered_data2 <- unfiltered_data2 %>%
+     filter(SEX != 0) %>%  # remove unknown sex
+     filter(AGE != 0) %>%  # remove unknown age
+     filter(FLYWAY != 8 & FLYWAY != 9) %>% # remove Caribbean & South American records
+     filter(FLYWAY!= 7) %>% #optional: remove mexico
+     filter(BANDING_YEAR >= 1967 & BANDING_YEAR <= 2015) %>% 
+     filter(is.na(ENCOUNTER_YEAR) | (ENCOUNTER_YEAR >= 1967 & ENCOUNTER_YEAR <= 2015)) %>%  # filter to dates of study
+     filter(is.na(E_HOW_OBTAINED) | !(AGE == 04 & E_HOW_OBTAINED == 30))
+
+#n = 267115 / 266987 remaining (Mex, no Mex)
+```
+
+So the filtering doesn't turn out to matter too much, because there are only three records that stay in filtering one way or the other:
+```{r, include = FALSE}
+print(filter(filtered_data, BAND_NUM == 178385863 | BAND_NUM == 162335894 | BAND_NUM == 178317149), options(tibble.width= Inf))
+     
+```
+
+### Without HY
+Using the originally filtered data (I'd be happy to take out those other 3 records), here's the data with out the hatch years. I actually don't think you eliminated all of these in the first go because it makes us about 10K records short of where you were.
+```{r}
+data_noHY <- filter(filtered_data, AGE != 02) # removes n = 73871
+```
+
+```{r, include = FALSE}
+### Transform some columns ----
+# Sex (into M and F)
+data_chr_traits <- translate_sex(filtered_data, "SEX")
+data_chr_noHY <- translate_sex(data_noHY, "SEX")
+
+# Age (into HY and AHY categories)
+data_chr_traits <- translate_age(data_chr_traits, "AGE", group = TRUE) 
+data_chr_noHY <- translate_age(data_chr_noHY, "AGE", group = TRUE)
+
+#Flyway (into 4)
+data_chr_traits <- calc_flyways_four(data_chr_traits, "FLYWAY", "B_LON", chr_codes = FALSE, int_codes = TRUE) 
+data_chr_noHY <- calc_flyways_four(data_chr_noHY, "FLYWAY", "B_LON", chr_codes = FALSE, int_codes = TRUE)
+
+#Get rid of some unneccessary columns
+amke_individuals <- select(data_chr_traits, BAND_NUM, sex, age_class = b_age, flyway = FLYWAY, b_year = BANDING_YEAR, e_year = ENCOUNTER_YEAR)
+amke_indivs_noHY <- select(data_chr_noHY, BAND_NUM, sex, age_class = b_age, flyway = FLYWAY, b_year = BANDING_YEAR, e_year = ENCOUNTER_YEAR)
+```
+
+Another place that you could have lost some records was with the flyway filtering. When I used the longitudes exactly as you gave me, I lost 208 records from Canada that were farther east/west than the boundaries for flyways 1/4, so I changed the 4 flyways to span all of Canada. I also made the boundaries touch each other just because. I can change either of these things back too, just let me know.
+    
+     fw4 <- c(-141, -110) [what I used]          fw4 <- c(-136, -110) [what you used]
+     fw3 <- c(-110, -90)
+     fw2 <- c(-90, -82.7)
+     fw1 <- c(-82.7, -52)                        fw1 <- c(-82.7, -59)
+
+## Final data sets
+
+```{r}
+make_ldld <- function(df, study_first_yr, study_last_yr){
+     
+     reference_year1 <- study_first_yr
+     reference_year2 <-study_last_yr
+     
+     study_length <- (reference_year2 - reference_year1) + 1
+     
+     #Create a string of 0's of length 2 * study length
+     ch <- ""
+     m = 0
+     while(m < 2 * study_length){
+          ch <- str_c(ch, "0")
+          m <- m + 1
+     }
+
+     band_position <- vector(mode = "integer", length = nrow(df))
+     enc_position <- vector(mode = "integer", length = nrow(df))
+     result <- vector(mode = "character", length = nrow(df))
+     
+     for(i in 1:nrow(df)){result[i] = ch} #fill result with character strings
+     for(i in 1:nrow(df)){
+          band_position[i] <- 2*(df$b_year[i] - (reference_year1-1))-1 # create a vector of all the places the band "1" will go
+     }
+     for(i in 1:nrow(df)){
+          str_sub(result[i], start = band_position[i], end = band_position[i]) <- "1" # update the strings in result with band "1"
+     }
+     for(i in 1:nrow(df)){
+          if(!is.na(df$e_year[i])){
+               enc_position[i] <- 2*(df$e_year[i] - (reference_year1-1)) # create a vector of all the places the enc "1" will go
+          } else{
+               enc_position[i] <- NA
+          }
+     }
+     for(i in 1:nrow(df)){
+          if(!is.na(enc_position[i])){
+               str_sub(result[i], start = enc_position[i], end = enc_position[i]) <- "1"
+          }
+     }
+     
+     result <- str_c("\"", result, "\"") #add " to the ends of the string so excel doesn't eat the 0s
+     df$ch <- result
+     return(df)
+}
+```
+
+I made versions including and excluding HYs
+```{r}
+### Make mark string in dataset
+amke_mark <- make_ldld(amke_individuals, 1967, 2015)
+amke_noHY_mark <- make_ldld(amke_indivs_noHY, 1967, 2015)
+
+### Group into rows w/ frequencies
+grouped_amke <- group_by(amke_mark, ch, sex, age_class, flyway)
+final <- summarise(grouped_amke, freq = n())
+View(final)
+sum(final$freq)
+
+#And again for no-HYs
+grouped_amke_noHY <- group_by(amke_noHY_mark, ch, sex, age_class, flyway)
+final_noHY <- summarise(grouped_amke_noHY, freq = n())
+View(final_noHY)
+sum(final_noHY$freq)
+```
+
+What's interesting here that I can't totally figure out is that I have about 300 more possible LD/age/sex combinations (rows) than Ben had when he did it, even when I take out the hatch years and have a smaller dataset. Ideas?
+
+## Files
+The csvs of the end data with and without hatch years are (hopefully) in the mark-data file in the repository. I'll try to be sure to update them if I change anything.  
+
+As of 6 June 2017, the data files are:  
+     "mark-data/LD_amke_may2017.csv" for with HY   
+     "mark-data/LD_amke_noHY_may2017.csv" for without HY
