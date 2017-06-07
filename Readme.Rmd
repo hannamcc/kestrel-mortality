@@ -20,7 +20,7 @@ all_bands <- read_bbl("data/AMKE_bandingdb_201705111647.csv", with_encs = FALSE)
 ```
 
 ## Filtering encounter records
-_Update_: Decided this was the more conservative filtering approach, so I used this instead of what Julie describes in email.  
+_Update_: Decided this was the more conservative filtering approach, so I used this instead of what Julie describes in email.
 Originally, I just filtered down to only include present condition codes 03, 04, 05 which are the "dead" codes:
 ```{r}
 recoveries <- filter(encounters, E_PRESENT_CONDITION_CODE == 3 | E_PRESENT_CONDITION_CODE == 4 | E_PRESENT_CONDITION_CODE == 5)
@@ -28,8 +28,7 @@ recoveries <- filter(encounters, E_PRESENT_CONDITION_CODE == 3 | E_PRESENT_CONDI
 ```
 
 ## Selecting encounter records to remove birds from data entirely
-Since some encounter records are ambiguous, we've decided to take these records out of the data entirely. To do this, I created a set of the bad records and tagged them as bad in a new column so I can take them out once I've joined the banding and encounter records.  
-To see what the codes look like that I removed, look at filtering-data file.  
+Since some encounter records are ambiguous, we've decided to take these records out of the data entirely. To do this, I created a set of the bad records and tagged them as bad in a new column so I can take them out once I've joined the banding and encounter records
 
 ```{r}
 
@@ -79,7 +78,7 @@ unfiltered_data <- bands_and_recoveries %>%
 ## Filtering data
 After joining the two datasets together, any filtering will actually remove that record/band from the data altogether.   
   
-This is the filtering that I ended up doing: removing unknown age and sex, removing Caribbean and South American records, removing Mexico, selecting the correct years, and removing the locals that died in the nest.   
+This is the filtering that I ended up doing: removing unknown age and sex, removing Caribbean and South American records, removing Mexico, selecting the correct years, and removing the locals that died in the nest. 
 _Update_: I updated the year range to include 2016.   
 ```{r}
 filtered_data <- unfiltered_data %>%
