@@ -1,0 +1,31 @@
+I removed any records with present condition 'unknown' and the following how obtained codes from the data entirely. Let me know if you see one that we should keep, either as a D or an L   
+   
+    E_HOW_OBTAINED_CODE `n()`
+                 <int> <int>
+1                    3    37		  injury
+2                    4     4		  trap/snare not for catching birds
+3                   13     2		  striking stationary object
+4                   14     2		  struck by vehicle
+5                   15     3		  weather
+6                   21    34		  caught/found dead in building
+7                   26     1		  entanglement in fishing
+8                   28    18		  caught by hand
+9                   32     1		  caught due to parasites
+10                  33     6		  caught/observed at nest
+11                  36     3		  caught due to exhaustion
+12                  37     1		  discontinued
+13                  45     3		  dead/injured on highway
+14                  46     1		  joined flock of domestic birds
+15                  47     7		  discontinued
+16                  56     9		  obtained
+17                  57     1		  entanglement
+18                  66    67	KEEP as living birds (trapped/released, banding)
+19                  97    13	       miscellaneous
+20                  98    58	       band/band number only
+
+------------------------------------------------------------------------------
+
+Hatch years:
+
+There are 96 records between Jan 1 and Apr 14 with HY. (post-filtering)
+I changed these to AHY but can just delete them if that's better

@@ -34,6 +34,7 @@ filtered_data <- unfiltered_data %>%
      filter(is.na(E_HOW_OBTAINED) | !(AGE == 4 & E_HOW_OBTAINED == 30)) #remove locals died in nest, removes n = 19
 
      #n = 267118 / 266990 remaining (Mx, no Mx)
+     # with 2478 encounter records
      
 data_noHY <- filter(filtered_data, AGE != 02) # removes n = 73871 
 
@@ -151,7 +152,7 @@ recoveries2 <- filter(recoveries2, E_PRESENT_CONDITION_CODE == 03 | E_PRESENT_CO
 
 recoveries2 %>% filter(duplicated(.[["BAND_NUM"]])) # verify no duplicates, but there is one:
 
-filter(recoveries2, BAND_NUM == 126346015) %>% # One duplicate - both encounters report the bird dead, but in different columns
+filter(recoveries2, BAND_NUM == 126346015) %>% # One duplicate - both encounters report the bird dead, but in different columns (BBL problem)
      select(ENCOUNTER_YEAR, E_HOW_OBTAINED_CODE, E_PRESENT_CONDITION_CODE)
 recoveries2 <- filter(recoveries2, BAND_NUM != 126346015 | E_PRESENT_CONDITION_CODE ==05) #remove one of the duplicates
 
@@ -170,6 +171,7 @@ filtered_data2 <- unfiltered_data2 %>%
      filter(is.na(E_HOW_OBTAINED) | !(AGE == 04 & E_HOW_OBTAINED == 30))
 
 #n = 267115 / 266987 remaining
+#with 2528 encounter records
 
 data_noHY2 <- filter(filtered_data2, AGE != 02) # removes n = 73871
 
