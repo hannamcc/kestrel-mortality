@@ -1,5 +1,8 @@
 library(tidyverse)
 library(stringr)
+library(geosphere)
+#Should update this because can't have null values in if statements -> write removal of nulls into functions, so it isn't necessary to do that ahead of time -> screws up parsing. read about nulls in ifs
+
 
 # ----- read-parse-bbl -----
 read_bbl <- function(file, with_encs = TRUE){
@@ -84,7 +87,7 @@ calc_disp_type <- function(df, var, num = TRUE){
      }
      
      disp_levs <- c("U", "N", "B")
-     df$disp_type <- parse_factor(result, levels = disp_levels)
+     df$disp_type <- parse_factor(result, levels = disp_levs)
      return(df)
 }
 
@@ -108,17 +111,17 @@ translate_age <- function(df, var, group = FALSE){
 
 calc_flyways_four <- function(df, var, lon_col, encounter = FALSE, chr_codes = TRUE, int_codes = FALSE){
      result <-as_vector(df[,var])
-     longitude <- as_vector(df[,lon_col]) #vector of longitudes to use to calculate the flyways
+     longitude <- as_vector(df[,lon_col]) #vector of longitudes to use to calculate the flyways (data frame column to reference) 
      
      #Flyways from J. Heath, B. Pauli mortality study (longitude boundaries)
-     #fw4 <- c(-136, -110)
+     
      fw4 <- c(-141, -110)
      fw3 <- c(-110, -90)
      fw2 <- c(-90, -82.7)
-     #fw1 <- c(-82.7, -59)
      fw1 <- c(-82.7, -52)
      
      for(i in 1:nrow(df)){
+          
           #calculate numeric flyway codes, store them in result
           #Change Alaska to Pacific
           #Change Canada and Mexico
@@ -134,14 +137,14 @@ calc_flyways_four <- function(df, var, lon_col, encounter = FALSE, chr_codes = T
                     if(longitude[i] >= fw4[1] && longitude[i] <= fw4[2]){
                          result[i] <- 4} else if (longitude[i] > fw3[1]){
                               result[i] <- 3} else {result[i] <- NA}
-               } 
+               } else {result[i] <- NA}
      }
      
      if(int_codes == TRUE){ #Add the integer codes as a column
-          int_fw_levs <- c(1, 2, 3, 4, NA)
+          int_fw_levs <- c(1, 2, 3, 4, "NA")
           if(encounter == TRUE){
-               df$e_flyway <- parse_factor(result, levels = int_fw_levs)
-          } else{ df$b_flyway <- parse_factor(result, levels = int_fw_levs)}
+               df$E_FLYWAY <- parse_factor(result, levels = int_fw_levs)
+          } else{ df$B_FLYWAY <- parse_factor(result, levels = int_fw_levs)}
      }
      
      if(chr_codes == TRUE){
@@ -161,10 +164,10 @@ calc_flyways_four <- function(df, var, lon_col, encounter = FALSE, chr_codes = T
           }
           
           #add chr result column
-          chr_fw_levs <- c("Pacific", "Central", "Mississippi", "Atlantic")
+          chr_fw_levs <- c("Pacific", "Central", "Mississippi", "Atlantic", NA)
           if(encounter == TRUE){
-               df$e_flyway_chr <- parse_factor(result, levels = chr_fw_levs)
-          } else{ df$b_flyway_chr <- parse_factor(result, levels = chr_fw_levs)}
+               df$E_FLYWAY_CHR <- parse_factor(result, levels = chr_fw_levs)
+          } else{ df$B_FLYWAY_CHR <- parse_factor(result, levels = chr_fw_levs)}
      }
      
      return(df)
@@ -180,4 +183,55 @@ translate_region <- function(){ #(df, var) inputs once the commented line below 
      #get this working
      
      return(bblregions)
+} #this one doesn't work yet
+
+# ----- inspect data by a column -----
+
+inspect_bbl <- function(data_object, by, columns){
+     
+     inspect_matrix <- data_object %>%
+          filter(!is.na(data_object[, by])) %>%
+          select(one_of(columns))
+     
+     print(inspect_matrix, n = Inf, width = Inf)
+     View(inspect_matrix)
+}
+
+# ----- calculate distance and bearing -----
+#These functions aren't great yet because they require the variable names to be in very specific/unaltered format & the code is not great
+calc_dist_km <- function(df){
+     output <- mutate(df, dist_km = 0)
+     
+     b_loc_matrix <- select(df, B_LON_DECIMAL_DEGREES, B_LAT_DECIMAL_DEGREES)
+     e_loc_matrix <- select(df, E_LON_DECIMAL_DEGREES, E_LAT_DECIMAL_DEGREES)
+     
+     output$dist_km = (distGeo(b_loc_matrix, e_loc_matrix)) / 1000
+     
+     output
+}
+
+calc_bearing_degs <- function(data_object){
+     output <- mutate(data_object, bearing_degs = 0)
+     
+     b_loc_matrix <- select(data_object, B_LON_DECIMAL_DEGREES, B_LAT_DECIMAL_DEGREES)
+     e_loc_matrix <- select(data_object, E_LON_DECIMAL_DEGREES, E_LAT_DECIMAL_DEGREES)
+     
+     output$bearing_degs = bearing(b_loc_matrix, e_loc_matrix)
+     output
+}
+
+# ----- Write out specific columns -----
+# Not sure if this function is going to stay, but I'll keep it here for now
+# It is definitely nice not to have to specify all of the columns, but it's also sort of dumb
+write_bbl <- function(data_object, dispersal_type = NULL, file_name){
+     final_data <- data_object %>%
+          select(ID, band_number = BAND_NUM, sex, b_age, b_status, b_date = BANDING_DATE, b_month = BANDING_MONTH, b_day = BANDING_DAY, b_year = BANDING_YEAR, e_date = ENCOUNTER_DATE, e_month = ENCOUNTER_MONTH, e_day = ENCOUNTER_DAY, e_year = ENCOUNTER_YEAR, e_status, e_who, disp_type, b_precision = B_COORD_PRECISION, b_lat = B_LAT_DECIMAL_DEGREES, b_lon = B_LON_DECIMAL_DEGREES, b_region = B_REGION, b_location, e_precision = E_COORD_PRECISION, e_lat = E_LAT_DECIMAL_DEGREES, e_lon = E_LON_DECIMAL_DEGREES, e_region = E_REGION, e_location, bbl_dist = DISTANCE, bbl_bearing = BEARING, same_block = SAME_10_MIN_BLOCK) 
+     
+     if(dispersal_type == "B" || dispersal_type == "breeding"){
+          final_data <- filter(final_data, disp_type == "B")
+     } else if(dispersal_type == "N" || dispersal_type == "natal"){
+          final_data <- filter(final_data, disp_type == "N")
+     }
+     
+     write_csv(final_data, "file_name")
 }
