@@ -54,7 +54,7 @@ filter(removals, E_PRESENT_CONDITION_CODE == 12 | E_PRESENT_CONDITION_CODE == 13
 ## Check and see if birds that have a weird alive encounter record later appear as a dead bird. In this case, take the alive record out of the removals set because we want these to stay in data as dead band recoveries
 
 View(inner_join(recoveries, removals, by = c("BAND_NUM"))%>%
-          select(BAND_NUM, ENCOUNTER_YEAR.x, ENCOUNTER_YEAR.y, E_PRESENT_CONDITION_CODE.x, E_PRESENT_CONDITION_CODE.y, E_HOW_OBTAINED_CODE.x, E_HOW_OBTAINED_CODE.y)) # n = 13, might want to look further at the ones where the two encounters don't occur in the same year to determine which year to use (this looks like place BBL needs to continue to clean up, it's weird there are two different records for some of these)
+          select(BAND_NUM, ENCOUNTER_YEAR.x, ENCOUNTER_YEAR.y, E_PRESENT_CONDITION_CODE.x, E_PRESENT_CONDITION_CODE.y, E_HOW_OBTAINED_CODE.x, E_HOW_OBTAINED_CODE.y)) # n = 13, might want to look further at the ones where the two encounters don't occur in the same year to determine which year to use (it seems weird there are two different records for some of these)
 
 ### Remove these records from removals
 removals <- anti_join(removals, recoveries, by = c("BAND_NUM"))
@@ -112,7 +112,8 @@ filtered_data <- unfiltered_data %>%
 # n = 272349 
 # n = 2538 encounter records
 
-##-------Proof the HY codes---------
+##UPDATE: don't include the HY that I update to AHY based on date, they could still be marked HY due to some other data problem (don't run this chunk) ----- 
+## Proof the HY codes
 hatch_years <- left_join(filtered_data, all_bands, by = c("BAND_NUM")) %>%
      select(BAND_NUM, SEX, AGE, BANDING_YEAR.x, BANDING_MONTH, BANDING_DAY) %>%
      filter(AGE == 02)
@@ -121,7 +122,7 @@ filter(hatch_years, is.na(BANDING_MONTH)) # n = 0
 filter(hatch_years, BANDING_MONTH > 12) # n = 0
 HY_to_AHY <- filter(hatch_years, BANDING_MONTH < 4 | (BANDING_MONTH == 4 & BANDING_DAY < 15)) # n = 96
 
-## Update the 96 bad HY codes to AHY. -----
+## Update the 96 bad HY codes to AHY.
 errant_HY <- as_vector(HY_to_AHY[,"BAND_NUM"])
 band_vector <- as_vector(filtered_data[,"BAND_NUM"])
 result <- as_vector(filtered_data[,"AGE"])
@@ -137,6 +138,7 @@ filtered_data <- mutate(filtered_data, AGE_update = result) %>%
 
 filtered_data <- select(filtered_data, -AGE)
 filtered_data <- rename(filtered_data, AGE = AGE_update)
+
 
 # Remove HYs -----
 data_noHY <- filter(filtered_data, AGE != 02) # removes n = 74610 
@@ -171,11 +173,8 @@ filter(filtered_data, AGE == 2)
 
 
 ### After proofing data, get rid of unneccessary columns ----
-amke_individuals <- select(data_chr_traits, BAND_NUM, sex, age_class = b_age, flyway = FLYWAY, b_year = BANDING_YEAR, e_year = ENCOUNTER_YEAR)
-amke_indivs_noHY <- select(data_chr_noHY, BAND_NUM, sex, age_class = b_age, flyway = FLYWAY, b_year = BANDING_YEAR, e_year = ENCOUNTER_YEAR)
-
-## Data + ggplot2 ----
-
+amke_individuals <- select(data_chr_traits, BAND_NUM, sex, age_class = b_age, flyway = B_FLYWAY, b_year = BANDING_YEAR, e_year = ENCOUNTER_YEAR)
+amke_indivs_noHY <- select(data_chr_noHY, BAND_NUM, sex, age_class = b_age, flyway = B_FLYWAY, b_year = BANDING_YEAR, e_year = ENCOUNTER_YEAR)
 
 ### ----- Function: make MARK string -----
 make_ldld <- function(df, study_first_yr, study_last_yr){

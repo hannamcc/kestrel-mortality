@@ -42,7 +42,7 @@ removals <- encounters %>%
 ## Check and see if birds that have a weird alive encounter record later appear as a dead bird. Take the alive record out of the removals set because we want these to stay in data as dead band recoveries
 
 View(inner_join(recoveries, removals, by = c("BAND_NUM"))%>%
-          select(BAND_NUM, ENCOUNTER_YEAR.x, ENCOUNTER_YEAR.y, E_PRESENT_CONDITION_CODE.x, E_PRESENT_CONDITION_CODE.y, E_HOW_OBTAINED_CODE.x, E_HOW_OBTAINED_CODE.y)) # n = 13, might want to look further at the ones where the two encounters don't occur in the same year to determine which year to use (this looks like place BBL needs to continue to clean up, it's weird there are two different records for some of these)
+          select(BAND_NUM, ENCOUNTER_YEAR.x, ENCOUNTER_YEAR.y, E_PRESENT_CONDITION_CODE.x, E_PRESENT_CONDITION_CODE.y, E_HOW_OBTAINED_CODE.x, E_HOW_OBTAINED_CODE.y)) # n = 13, might want to look further at the ones where the two encounters don't occur in the same year to determine which year to use (it seems weird there are two different records for some of these)
 
 ### Remove these records from removals
 removals <- anti_join(removals, recoveries, by = c("BAND_NUM"))
@@ -94,6 +94,7 @@ filtered_data <- unfiltered_data %>%
 # n = 2538 encounters
 ```
 
+_Update_: Omit this change. Remove all HY codes  
 _Update_: I also changed all of the HY codes to AHY if they were banded between Jan 1 & Apr 14 (n = 96):
 ```{r}
 hatch_years <- left_join(filtered_data, all_bands, by = c("BAND_NUM")) %>%
@@ -141,8 +142,8 @@ data_chr_traits <- calc_flyways_four(data_chr_traits, "FLYWAY", "B_LON", chr_cod
 data_chr_noHY <- calc_flyways_four(data_chr_noHY, "FLYWAY", "B_LON", chr_codes = FALSE, int_codes = TRUE)
 
 #Get rid of some unneccessary columns
-amke_individuals <- select(data_chr_traits, BAND_NUM, sex, age_class = b_age, flyway = FLYWAY, b_year = BANDING_YEAR, e_year = ENCOUNTER_YEAR)
-amke_indivs_noHY <- select(data_chr_noHY, BAND_NUM, sex, age_class = b_age, flyway = FLYWAY, b_year = BANDING_YEAR, e_year = ENCOUNTER_YEAR)
+amke_individuals <- select(data_chr_traits, BAND_NUM, sex, age_class = b_age, flyway = B_FLYWAY, b_year = BANDING_YEAR, e_year = ENCOUNTER_YEAR)
+amke_indivs_noHY <- select(data_chr_noHY, BAND_NUM, sex, age_class = b_age, flyway = B_FLYWAY, b_year = BANDING_YEAR, e_year = ENCOUNTER_YEAR)
 ```
 
 
